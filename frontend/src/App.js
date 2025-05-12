@@ -4,6 +4,7 @@ import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
 import Login from './pages/Login/Login';
 import CustomerProfile from './pages/Customer/CustomerProfile';
+import DriverProfile from './pages/Driver/DriverProfile';
 // import other pages like CustomerRegister, DriverRegister, Login
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         {/* <Route path="/register/driver" element={<DriverRegister />} /> */}
         <Route path="/login" element={<Login />} /> 
         <Route path="/customer/profile" element={<CustomerProfile />} /> 
+        <Route path="/driver/profile" element={<DriverProfile />} /> 
       </Routes>
     </Router>
   );

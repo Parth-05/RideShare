@@ -54,9 +54,9 @@ const RegisterPage = () => {
     try {
       const response = await api.post(`${role}s/register`, payload);
       alert('Registration successful!');
-      navigate('/login');
+      navigate(`/${role}/profile`);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Registration failed';
+      const errorMessage = err.response?.data?.message || 'Registration failed';
       alert(errorMessage);
     }
   };

@@ -1,21 +1,21 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCustomerProfile, logoutCustomer } from '../../redux/auth/authSlice';
+import { fetchDriverProfile, logoutDriver } from '../../redux/auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 
-const CustomerProfile = () => {
+const DriverProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, loading } = useSelector((state) => state.auth);
 
   useEffect(() => {
     if (!user) {
-      dispatch(fetchCustomerProfile());
+      dispatch(fetchDriverProfile());
     }
   }, [dispatch, user]);
 
   const handleLogout = () => {
-    dispatch(logoutCustomer());
+    dispatch(logoutDriver());
     navigate('/login');
   };
 
@@ -26,7 +26,7 @@ const CustomerProfile = () => {
   return (
     <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center px-4 py-12">
       <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md border border-[#E2E8F0]">
-        <h1 className="text-3xl font-bold mb-6 text-center text-[#1E3A8A]">Your Profile</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center text-[#1E3A8A]">Driver Profile</h1>
 
         <div className="space-y-4">
           <div>
@@ -53,6 +53,26 @@ const CustomerProfile = () => {
             <p className="text-[#64748B]">State</p>
             <p className="font-semibold text-[#1E3A8A]">{user.state}</p>
           </div>
+
+          <div>
+            <p className="text-[#64748B]">Car Name</p>
+            <p className="font-semibold text-[#1E3A8A]">{user.car_name}</p>
+          </div>
+
+          <div>
+            <p className="text-[#64748B]">Car Type</p>
+            <p className="font-semibold text-[#1E3A8A]">{user.car_type}</p>
+          </div>
+
+          <div>
+            <p className="text-[#64748B]">Car Number</p>
+            <p className="font-semibold text-[#1E3A8A]">{user.car_number}</p>
+          </div>
+
+          <div>
+            <p className="text-[#64748B]">Rating</p>
+            <p className="font-semibold text-[#1E3A8A]">{user.rating}</p>
+          </div>
         </div>
 
         <button
@@ -66,4 +86,4 @@ const CustomerProfile = () => {
   );
 };
 
-export default CustomerProfile;
+export default DriverProfile;

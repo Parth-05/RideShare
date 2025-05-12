@@ -13,7 +13,7 @@ export const registerCustomer = async (req, res) => {
 
     const existing = await Customer.findOne({ email });
     if (existing) {
-      return res.status(409).json({ error: 'Customer already exists' });
+      return res.status(409).json({ message: 'Customer already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -24,9 +24,24 @@ export const registerCustomer = async (req, res) => {
       ...rest
     });
 
-    res.status(201).json({ message: 'Customer registered', customer });
+    // Sign JWT token after registration
+    const token = jwt.sign(
+      { id: customer._id, role: 'customer' },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Set token in httpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+    const { password: storedPassword, ...customerDetails } = customer._doc;
+
+    res.status(201).json({ message: 'Customer registered', data: customerDetails });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -36,10 +51,10 @@ export const loginCustomer = async (req, res) => {
     const { email, password } = req.body;
 
     const customer = await Customer.findOne({ email });
-    if (!customer) return res.status(400).json({ error: 'Customer not found' });
+    if (!customer) return res.status(400).json({ message: 'Customer not found' });
 
     const valid = await bcrypt.compare(password, customer.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid Credentials' });
+    if (!valid) return res.status(401).json({ message: 'Invalid Credentials' });
 
     // Sign JWT token
     const token = jwt.sign(
@@ -56,9 +71,9 @@ export const loginCustomer = async (req, res) => {
   });
 
     const { password: storedPassword, ...customerDetails } = customer._doc;
-    res.status(200).json({ message: 'Login successful', customer: customerDetails });
+    res.status(200).json({ message: 'Login successful', data: customerDetails });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -66,11 +81,11 @@ export const loginCustomer = async (req, res) => {
 export const getCustomerProfile = async (req, res) => {
   try {
     const customer = await Customer.findById(req.user.id).select('-password');
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
     res.status(200).json({ customer });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
