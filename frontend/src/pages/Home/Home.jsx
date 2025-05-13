@@ -12,14 +12,14 @@ const LandingPage = () => {
       </p>
 
       <div className="flex flex-col md:flex-row gap-6">
-        <Link to="/register/customer">
+        {/* <Link to="/register/customer">
           <button className="bg-[#2563EB] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#1D4ED8] transition">
             Register as Customer
           </button>
-        </Link>
-        <Link to="/register/driver">
-          <button className="bg-[#10B981] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#059669] transition">
-            Register as Driver
+        </Link> */}
+        <Link to="/register">
+          <button className="bg-[#2563EB] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#059669] transition">
+            Register
           </button>
         </Link>
       </div>

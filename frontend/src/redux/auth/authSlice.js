@@ -84,7 +84,7 @@ const authSlice = createSlice({
       })
       .addCase(fetchCustomerProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = { ...action.payload, role: 'customer' };
       })
       .addCase(fetchCustomerProfile.rejected, (state, action) => {
         state.loading = false;
@@ -98,7 +98,7 @@ const authSlice = createSlice({
       })
       .addCase(fetchDriverProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = { ...action.payload, role: 'driver' };
       })
       .addCase(fetchDriverProfile.rejected, (state, action) => {
         state.loading = false;
@@ -112,7 +112,7 @@ const authSlice = createSlice({
       })
       .addCase(loginCustomer.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = { ...action.payload, role: 'customer' };
       })
       .addCase(loginCustomer.rejected, (state, action) => {
         state.loading = false;
@@ -126,7 +126,7 @@ const authSlice = createSlice({
       })
       .addCase(loginDriver.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = { ...action.payload, role: 'driver' };
       })
       .addCase(loginDriver.rejected, (state, action) => {
         state.loading = false;

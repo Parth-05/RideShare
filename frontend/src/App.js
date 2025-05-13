@@ -5,11 +5,12 @@ import Register from './pages/Register/Register';
 import Login from './pages/Login/Login';
 import CustomerProfile from './pages/Customer/CustomerProfile';
 import DriverProfile from './pages/Driver/DriverProfile';
-// import other pages like CustomerRegister, DriverRegister, Login
+import Navbar from './components/Navbar';
 
 function App() {
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         {/* Add these later */}
