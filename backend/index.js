@@ -2,26 +2,35 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import http from 'http';
+import { Server } from 'socket.io';
+
 import customerRoutes from './routes/customerRoutes.js';
 import driverRoutes from './routes/driverRoutes.js';
+import rideRoutes from './routes/rideRoutes.js';
 import mongoose from 'mongoose';
 
 dotenv.config();
 const app = express();
 
-// Client/Frontend Origin URL 
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 
-// Middleware
 app.use(cors({
   origin: CLIENT_ORIGIN,
   credentials: true
-}
-));
+}));
 app.use(express.json());
 app.use(cookieParser());
 
-// MongoDB Connection
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: CLIENT_ORIGIN,
+    credentials: true
+  }
+});
+
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, {
@@ -29,14 +38,30 @@ mongoose.connect(MONGO_URI, {
   useUnifiedTopology: true
 })
   .then(() => {
-    console.log('✅ Connected to MongoDB');
 
-    // Middleware Routes
+    // Routes
     app.use('/api/customers', customerRoutes);
     app.use('/api/drivers', driverRoutes);
+    app.use('/api/rides', rideRoutes(io));
+
+    // Socket.io connection
+    io.on('connection', (socket) => {
+      console.log('Socket connected:', socket.id);
+
+      // 🚗 Drivers join "drivers" room
+      socket.on('join_as_driver', () => {
+        console.log(`Socket ${socket.id} joined as DRIVER`);
+        socket.join('drivers');
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Socket disconnected:', socket.id);
+      });
+    });
 
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    console.log('✅ Connected to MongoDB');
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err);
