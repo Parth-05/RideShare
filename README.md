@@ -1,7 +1,8 @@
 # RideShare/Ride Booking Application
 This is a full-stack Ride Booking Application that simulates the core functionality of a ride-hailing service.
 It allows customers to book rides by selecting pickup and dropoff locations on a map, and enables drivers to receive ride requests in real time via WebSocket and accept or decline them. Once a driver accepts, the ride is displayed as an ongoing ride for both parties.
-![Uploading image.png…]()
+![image](https://github.com/user-attachments/assets/1c97b04b-efe7-46d1-81b4-55b1fd167cb3)
+
 
 The project demonstrates:
 
