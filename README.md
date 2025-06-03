@@ -6,13 +6,13 @@ It allows customers to book rides by selecting pickup and dropoff locations on a
 
 The project demonstrates:
 
-**Real-time event-driven architecture using Socket.IO**
+- Real-time event-driven architecture using Socket.IO
 
-**Full-stack REST API for user management and ride operations**
+- Full-stack REST API for user management and ride operations
 
-**Interactive Map-based UI for booking rides**
+- Interactive Map-based UI for booking rides
 
-**Authentication and role-based flow for customers and drivers**
+- Authentication and role-based flow for customers and drivers
 
 # Technologies and Languages Used
 
