@@ -162,11 +162,11 @@ const BookRide = () => {
         if (pickup && dropoff) {
             const url = `https://router.project-osrm.org/route/v1/driving/${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}?overview=false`;
 
-            const carPrices = {
-                Standard: 20,
-                SUV: 35,
-                Van: 50,
-            };
+            // const carPrices = {
+            //     Standard: 20,
+            //     SUV: 35,
+            //     Van: 50,
+            // };
 
             try {
                 const res = await fetch(url);
@@ -174,8 +174,29 @@ const BookRide = () => {
 
                 const meters = data.routes[0].distance;
                 const miles = meters / 1609.34;
-                const price = carPrices[carType];
-                setEstimatedPrice(price);
+                // const price = carPrices[carType];
+                // ✨ Get date & time info
+                const now = new Date();
+                const pick_hour = now.getHours();
+                const pick_day = now.getDate(); // Day of the month (1-31)
+
+                // ✨ Call FastAPI to get predicted price
+                const predictRes = await fetch('http://localhost:8000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trip_distance: miles, pick_hour, pick_day }),
+                });
+                const predictData = await predictRes.json();
+                console.log('Predicted price data:', predictData);
+                let price = predictData.predicted_price;
+
+                if (carType === 'SUV') {
+                    price += 3;
+                } else if (carType === 'Van') {
+                    price += 5;
+                }
+
+                setEstimatedPrice(price.toFixed(2));
                 console.log(`Ride request: Distance = ${miles.toFixed(2)} miles, Car Type = ${carType}, Estimated Price = $${price}`);
 
                 dispatch(requestRide({

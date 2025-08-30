@@ -1,8 +1,13 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { jwtDecode } from 'jwt-decode';  // ✅ Correct import
-import { logoutCustomer, logoutDriver, fetchCustomerProfile, fetchDriverProfile } from '../redux/auth/authSlice';
+import { jwtDecode } from 'jwt-decode';
+import {
+  logoutCustomer,
+  logoutDriver,
+  fetchCustomerProfile,
+  fetchDriverProfile,
+} from '../redux/auth/authSlice';
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -10,20 +15,22 @@ const Navbar = () => {
   const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    const tokenEntry = document.cookie.split('; ').find(row => row.startsWith('token='));
+    // Try to hydrate user from cookie token if we don't have one yet
+    const tokenEntry = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('token='));
     if (tokenEntry && !user) {
-      const token = tokenEntry.split('=')[1];
-
+      const token = decodeURIComponent(tokenEntry.split('=')[1] || '');
       try {
-        const decoded = jwtDecode(token);  // ✅ Correct usage
-
-        if (decoded.role === 'customer') {
+        const decoded = jwtDecode(token);
+        const role = decoded?.role;
+        if (role === 'customer') {
           dispatch(fetchCustomerProfile());
-        } else if (decoded.role === 'driver') {
+        } else if (role === 'driver') {
           dispatch(fetchDriverProfile());
         }
-      } catch (error) {
-        console.error('Invalid token:', error);
+      } catch (err) {
+        console.error('Invalid token:', err);
       }
     }
   }, [dispatch, user]);
@@ -40,44 +47,53 @@ const Navbar = () => {
   const profilePath = user?.role === 'driver' ? '/driver/profile' : '/customer/profile';
 
   return (
-    <nav className="bg-[#F1F5F9] border-b border-[#E2E8F0] px-6 py-3 shadow-sm flex justify-between items-center">
-      <Link to="/" className="text-2xl font-bold text-[#1E3A8A]">
-        RideSphere
-      </Link>
+    <header className="sticky top-0 z-10 border-b border-slate-200/70 bg-white/70 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <Link to="/" className="text-xl font-bold tracking-tight text-indigo-700">
+          RideSphere
+        </Link>
 
-      <div className="flex items-center gap-6">
-
-        {user && (
-          <>
-            <Link to={profilePath} className="text-[#1E3A8A] font-medium hover:underline">
-              Profile
-            </Link>
-
-            {user.role === 'customer' && (
-              <Link to="/customer/book-ride" className="text-[#1E3A8A] font-medium hover:underline">
-                Book a Ride
+        <div className="flex items-center gap-4">
+          {/* When logged in, show nav links */}
+          {user && (
+            <>
+              <Link
+                to={profilePath}
+                className="text-slate-700 hover:text-slate-900 font-medium"
+              >
+                Profile
               </Link>
-            )}
-          </>
-        )}
 
-        {user ? (
-          <button
-            onClick={handleLogout}
-            className="bg-[#2563EB] text-white px-4 py-1.5 rounded-lg hover:bg-[#1D4ED8] transition"
-          >
-            Logout
-          </button>
-        ) : (
-          <button
-            onClick={() => navigate('/login')}
-            className="bg-[#2563EB] text-white px-4 py-1.5 rounded-lg hover:bg-[#1D4ED8] transition"
-          >
-            Login
-          </button>
-        )}
+              {user.role === 'customer' && (
+                <Link
+                  to="/customer/book-ride"
+                  className="text-slate-700 hover:text-slate-900 font-medium"
+                >
+                  Book a Ride
+                </Link>
+              )}
+            </>
+          )}
+
+          {/* Auth button */}
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+            >
+              Login
+            </Link>
+          )}
+        </div>
       </div>
-    </nav>
+    </header>
   );
 };
 
