@@ -1,10 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/axiosInstance';
+import {
+  UserPlus,
+  User,
+  Mail,
+  Lock,
+  Phone,
+  Home,
+  MapPin,
+  Hash,
+  CreditCard,
+  Car,
+  Gauge,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import FullScreenLoader from '../../components/Loader'; // ⬅️ add this
 import './Register.css';
 
 const RegisterPage = () => {
   const [role, setRole] = useState('customer');
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,17 +38,20 @@ const RegisterPage = () => {
     credit_card: '',
     car_name: '',
     car_type: '',
-    car_number: ''
+    car_number: '',
   });
 
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErr(null);
+    setLoading(true); // ⬅️ show loader
 
     const payload = {
       role,
@@ -40,7 +63,7 @@ const RegisterPage = () => {
       city: formData.city,
       state: formData.state,
       zip_code: formData.zip_code,
-      phone: formData.phone
+      phone: formData.phone,
     };
 
     if (role === 'customer') {
@@ -52,108 +75,322 @@ const RegisterPage = () => {
     }
 
     try {
-      const response = await api.post(`${role}s/register`, payload);
-      alert('Registration successful!');
+      await api.post(`${role}s/register`, payload);
+      // keep loader visible until route change unmounts this page
       navigate(`/${role}/profile`);
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Registration failed';
-      alert(errorMessage);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || 'Registration failed';
+      setErr(errorMessage);
+      setLoading(false); // ⬅️ hide loader on error
     }
   };
 
-  const renderSharedFields = () => (
-    <>
-      {['first_name', 'last_name', 'address', 'city', 'state', 'zip_code', 'phone', 'email', 'password'].map((field) => (
-        <input
-          key={field}
-          name={field}
-          type={field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'}
-          placeholder={field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          required
-          onChange={handleChange}
-          className="w-full border border-[#E2E8F0] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-        />
-      ))}
-    </>
-  );
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] px-4 py-12">
-      <form onSubmit={handleSubmit} className="w-full max-w-lg bg-white rounded-xl shadow-xl p-8 border border-[#E2E8F0]">
-        <div className="flex bg-[#E2E8F0] overflow-hidden mb-6 w-full rounded-md">
-          <button
-            type="button"
-            onClick={() => setRole('customer')}
-            className={`flex-1 py-2 font-medium ${role === 'customer' ? 'bg-[#1E3A8A] text-white' : 'text-[#64748B]'}`}
-          >
-            Customer
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('driver')}
-            className={`flex-1 py-2 font-medium ${role === 'driver' ? 'bg-[#1E3A8A] text-white' : 'text-[#64748B]'}`}
-          >
-            Driver
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50 px-4 py-12">
+      {/* Full-screen loader overlay */}
+      {loading && <FullScreenLoader message="Creating your account…" />}
 
-        <h2 className="text-2xl font-semibold text-center mb-4 text-[#1E3A8A]">Register as {role}</h2>
+      <div className="mx-auto w-full max-w-3xl">
+        <form
+          onSubmit={handleSubmit}
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-indigo-600 to-blue-500 px-6 py-6 text-white">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-white/10 p-3">
+                <UserPlus className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Create your account</h1>
+                <p className="text-white/90 text-sm">Join RideSphere in seconds</p>
+              </div>
+            </div>
+          </div>
 
-        <div className="space-y-4">
-          {renderSharedFields()}
-
-          {role === 'customer' && (
-            <input
-              name="credit_card"
-              placeholder="Credit Card"
-              required
-              onChange={handleChange}
-              className="w-full border border-[#E2E8F0] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-            />
-          )}
-
-          {role === 'driver' && (
-            <>
-              <input
-                name="car_name"
-                placeholder="Car Name"
-                required
-                onChange={handleChange}
-                className="w-full border border-[#E2E8F0] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-              />
-              <select
-                name="car_type"
-                required
-                onChange={handleChange}
-                className="w-full border border-[#E2E8F0] rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+          <div className="p-6">
+            {/* Role tabs */}
+            <div className="mb-5 grid grid-cols-2 rounded-xl border border-slate-200 p-1">
+              <button
+                type="button"
+                onClick={() => setRole('customer')}
+                disabled={loading}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
+                  role === 'customer'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-50'
+                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                <option value="">Select Car Type</option>
-                <option value="Standard">Standard</option>
-                <option value="Premium">Premium</option>
-                <option value="XL">XL</option>
-              </select>
-              <input
-                name="car_number"
-                placeholder="Car Number"
-                required
-                onChange={handleChange}
-                className="w-full border border-[#E2E8F0] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-              />
-            </>
-          )}
-        </div>
+                <User className="h-4 w-4" /> Customer
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('driver')}
+                disabled={loading}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
+                  role === 'driver'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-50'
+                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <Car className="h-4 w-4" /> Driver
+              </button>
+            </div>
 
-        <button type="submit" className="w-full bg-[#2563EB] text-white py-2 rounded-lg mt-6 hover:bg-[#1D4ED8] transition">
-          Register
-        </button>
+            {err && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {err}
+              </div>
+            )}
 
-        <p className="text-sm text-center text-[#64748B] mt-4">
-          Already have an account?{' '}
-          <span onClick={() => navigate('/login')} className="text-[#2563EB] font-medium cursor-pointer hover:underline">
-            Login
-          </span>
-        </p>
-      </form>
+            {/* Shared fields */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* First & Last name */}
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <User className="h-4 w-4" />
+                </div>
+                <input
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  placeholder="First Name"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <User className="h-4 w-4" />
+                </div>
+                <input
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  placeholder="Last Name"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="relative md:col-span-1">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Email"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+
+              {/* Password with toggle */}
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((s) => !s)}
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 disabled:opacity-60"
+                  aria-label={showPwd ? 'Hide password' : 'Show password'}
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {/* Phone */}
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+
+              {/* Address */}
+              <div className="relative md:col-span-2">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Home className="h-4 w-4" />
+                </div>
+                <input
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Address"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+
+              {/* City / State / Zip */}
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <input
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="City"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <input
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="State"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Hash className="h-4 w-4" />
+                </div>
+                <input
+                  name="zip_code"
+                  value={formData.zip_code}
+                  onChange={handleChange}
+                  placeholder="Zip Code"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              </div>
+            </div>
+
+            {/* Role-specific fields */}
+            {role === 'customer' && (
+              <div className="mt-4">
+                <div className="relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <CreditCard className="h-4 w-4" />
+                  </div>
+                  <input
+                    name="credit_card"
+                    value={formData.credit_card}
+                    onChange={handleChange}
+                    placeholder="Credit Card"
+                    required
+                    disabled={loading}
+                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                  />
+                </div>
+              </div>
+            )}
+
+            {role === 'driver' && (
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="relative md:col-span-1">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Car className="h-4 w-4" />
+                  </div>
+                  <input
+                    name="car_name"
+                    value={formData.car_name}
+                    onChange={handleChange}
+                    placeholder="Car Name"
+                    required
+                    disabled={loading}
+                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="relative md:col-span-1">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Gauge className="h-4 w-4" />
+                  </div>
+                  <select
+                    name="car_type"
+                    value={formData.car_type}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    className="w-full appearance-none rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                  >
+                    <option value="">Select Car Type</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Premium">Premium</option>
+                    <option value="XL">XL</option>
+                  </select>
+                </div>
+
+                <div className="relative md:col-span-1">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Hash className="h-4 w-4" />
+                  </div>
+                  <input
+                    name="car_number"
+                    value={formData.car_number}
+                    onChange={handleChange}
+                    placeholder="Car Number"
+                    required
+                    disabled={loading}
+                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-6 w-full rounded-xl bg-indigo-600 py-2.5 font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loading ? 'Creating account…' : 'Register'}
+            </button>
+
+            <p className="mt-4 text-center text-sm text-slate-600">
+              Already have an account?{' '}
+              <span
+                onClick={() => !loading && navigate('/login')}
+                className={`cursor-pointer font-medium text-indigo-600 hover:underline ${
+                  loading ? 'pointer-events-none opacity-60' : ''
+                }`}
+              >
+                Login
+              </span>
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
