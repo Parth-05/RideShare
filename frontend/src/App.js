@@ -8,6 +8,7 @@ import DriverProfile from './pages/Driver/DriverProfile';
 import BookRide from './pages/BookRide/BookRide';
 import Navbar from './components/Navbar';
 import DriverDashboard from './pages/Driver/DriverDashboard';
+import FullScreenLoader from './components/Loader';
 
 function App() {
   return (

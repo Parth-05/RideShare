@@ -16,10 +16,10 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import FullScreenLoader from '../../components/Loader'; // ⬅️ add this
 import './Register.css';
 
 const RegisterPage = () => {
-  // ✅ JS version (no TS generic here)
   const [role, setRole] = useState('customer');
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErr(null);
-    setLoading(true);
+    setLoading(true); // ⬅️ show loader
 
     const payload = {
       role,
@@ -76,18 +76,20 @@ const RegisterPage = () => {
 
     try {
       await api.post(`${role}s/register`, payload);
-      alert('Registration successful!');
+      // keep loader visible until route change unmounts this page
       navigate(`/${role}/profile`);
     } catch (error) {
       const errorMessage = error?.response?.data?.message || 'Registration failed';
       setErr(errorMessage);
-    } finally {
-      setLoading(false);
+      setLoading(false); // ⬅️ hide loader on error
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50 px-4 py-12">
+      {/* Full-screen loader overlay */}
+      {loading && <FullScreenLoader message="Creating your account…" />}
+
       <div className="mx-auto w-full max-w-3xl">
         <form
           onSubmit={handleSubmit}
@@ -112,22 +114,24 @@ const RegisterPage = () => {
               <button
                 type="button"
                 onClick={() => setRole('customer')}
+                disabled={loading}
                 className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
                   role === 'customer'
                     ? 'bg-indigo-600 text-white'
                     : 'text-slate-600 hover:bg-slate-50'
-                }`}
+                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <User className="h-4 w-4" /> Customer
               </button>
               <button
                 type="button"
                 onClick={() => setRole('driver')}
+                disabled={loading}
                 className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
                   role === 'driver'
                     ? 'bg-indigo-600 text-white'
                     : 'text-slate-600 hover:bg-slate-50'
-                }`}
+                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <Car className="h-4 w-4" /> Driver
               </button>
@@ -152,7 +156,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="First Name"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
               <div className="relative">
@@ -165,7 +170,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Last Name"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
 
@@ -181,7 +187,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Email"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
 
@@ -197,12 +204,14 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Password"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 disabled:opacity-60"
                   aria-label={showPwd ? 'Hide password' : 'Show password'}
                 >
                   {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -220,7 +229,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Phone"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
 
@@ -235,7 +245,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Address"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
 
@@ -250,7 +261,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="City"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
               <div className="relative">
@@ -263,7 +275,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="State"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
               <div className="relative">
@@ -276,7 +289,8 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Zip Code"
                   required
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                 />
               </div>
             </div>
@@ -294,7 +308,8 @@ const RegisterPage = () => {
                     onChange={handleChange}
                     placeholder="Credit Card"
                     required
-                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -312,7 +327,8 @@ const RegisterPage = () => {
                     onChange={handleChange}
                     placeholder="Car Name"
                     required
-                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                   />
                 </div>
 
@@ -325,7 +341,8 @@ const RegisterPage = () => {
                     value={formData.car_type}
                     onChange={handleChange}
                     required
-                    className="w-full appearance-none rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={loading}
+                    className="w-full appearance-none rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                   >
                     <option value="">Select Car Type</option>
                     <option value="Standard">Standard</option>
@@ -344,7 +361,8 @@ const RegisterPage = () => {
                     onChange={handleChange}
                     placeholder="Car Number"
                     required
-                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -362,8 +380,10 @@ const RegisterPage = () => {
             <p className="mt-4 text-center text-sm text-slate-600">
               Already have an account?{' '}
               <span
-                onClick={() => navigate('/login')}
-                className="cursor-pointer font-medium text-indigo-600 hover:underline"
+                onClick={() => !loading && navigate('/login')}
+                className={`cursor-pointer font-medium text-indigo-600 hover:underline ${
+                  loading ? 'pointer-events-none opacity-60' : ''
+                }`}
               >
                 Login
               </span>
