@@ -15,7 +15,7 @@ const rideSchema = new mongoose.Schema({
   payment_id: { type: String }, // placeholder for future billing
   status: { 
     type: String, 
-    enum: ['requested', 'confirmed', 'completed', 'cancelled'], 
+    enum: ['requested', 'confirmed', 'ongoing', 'completed', 'cancelled'], 
     default: 'requested' 
   }
 }, { timestamps: true });

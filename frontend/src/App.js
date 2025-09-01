@@ -9,6 +9,7 @@ import BookRide from './pages/BookRide/BookRide';
 import Navbar from './components/Navbar';
 import DriverDashboard from './pages/Driver/DriverDashboard';
 import FullScreenLoader from './components/Loader';
+import RideLive from './pages/Ride/RideLive';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/driver/profile" element={<DriverProfile />} />
         <Route path="/driver/dashboard" element={<DriverDashboard />} />  
         <Route path='/customer/book-ride' element={<BookRide />} />
+        <Route path="/ride/:id" element={<RideLive />} />
       </Routes>
     </Router>
   );

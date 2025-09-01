@@ -54,6 +54,15 @@ mongoose.connect(MONGO_URI, {
         socket.join('drivers');
       });
 
+      // 🧑‍💼 Customers join their personal room
+      socket.on('join_as_customer', (customerId) => {
+        if (!customerId) return;
+        const room = `customer:${customerId}`;
+        socket.join(room);
+        console.log(`Socket ${socket.id} joined room ${room}`);
+      });
+
+
       socket.on('disconnect', () => {
         console.log('Socket disconnected:', socket.id);
       });

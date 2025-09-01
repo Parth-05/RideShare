@@ -89,6 +89,18 @@ export const getDriverProfile = async (req, res) => {
   }
 };
 
+// controllers/driverController.js
+export const getDriverPublic = async (req, res) => {
+  try {
+    const d = await Driver.findById(req.params.id)
+      .select('first_name last_name phone car_name car_type car_number rating');
+    if (!d) return res.status(404).json({ message: 'Driver not found' });
+    res.status(200).json({ data: d });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
+
 // logout driver
 export const logoutDriver = (req, res) => {
    res.clearCookie('token', {
