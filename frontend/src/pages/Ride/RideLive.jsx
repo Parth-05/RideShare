@@ -290,7 +290,7 @@ export default function RideLive() {
           </div>
 
           <button
-            onClick={() => navigate('/book')}
+            onClick={() => navigate('/customer/book-ride')}
             className="mt-4 w-full rounded-xl border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Back to booking

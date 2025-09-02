@@ -15,7 +15,7 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { requestRide } from '../../redux/ride/rideSlice';
+import { requestRide, clearRide } from '../../redux/ride/rideSlice';
 import { fetchCustomerProfile } from '../../redux/auth/authSlice';
 import io from 'socket.io-client';
 import api from '../../services/axiosInstance';
@@ -414,7 +414,8 @@ useEffect(() => {
           setRideOngoing(false);
           setRideCompleted(true);
           setCommon();
-          navigate(`/ride/${ride._id}`);
+          dispatch(clearRide());
+        //   navigate(`/ride/${ride._id}`);
           break;
 
         // 'requested' or any other state: stay on booking screen
@@ -450,6 +451,8 @@ useEffect(() => {
         const onCompleted = (data) => {
             if (currentRide && data.ride_id === currentRide._id) {
                 setRideCompleted(true);
+                // clear current ride after completed from redux
+                dispatch(clearRide());
             }
         };
 
