@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { MapContainer, TileLayer, Marker, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -9,6 +9,7 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import io from 'socket.io-client';
 import api from '../../services/axiosInstance';
 import { Car, Phone, Hash, Gauge, CheckCircle2, Zap, Flag } from 'lucide-react';
+import { fetchCustomerProfile } from '../../redux/auth/authSlice';
 
 const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
   withCredentials: true,
@@ -92,12 +93,20 @@ const Routing = ({ from, to }) => {
 
 export default function RideLive() {
   const { id } = useParams(); // ride id
+    const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user: authUser } = useSelector((s) => s.auth);
 
   const [ride, setRide] = useState(null);
   const [driver, setDriver] = useState(null);
   const [status, setStatus] = useState('loading');
+
+      // ensure we have the customer profile (for _id) once
+  useEffect(() => {
+    if (!authUser) {
+      dispatch(fetchCustomerProfile?.()); // safe no-op if you already loaded it elsewhere
+    }
+  }, [authUser, dispatch]);
 
   // Join this customer's room so only they get their events
   useEffect(() => {

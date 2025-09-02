@@ -35,7 +35,7 @@ export const registerCustomer = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',// HTTPS only in prod
-      sameSite: 'None', // cross-site
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // cross-site
       maxAge: 60 * 60 * 1000 // 1 hour
     });
     const { password: storedPassword, ...customerDetails } = customer._doc;
@@ -68,7 +68,7 @@ export const loginCustomer = async (req, res) => {
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // only over HTTPS in prod
-    sameSite: 'None', // cross-site  
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // cross-site in prod
     maxAge: 60 * 60 * 1000 // 1 hour
   });
 
