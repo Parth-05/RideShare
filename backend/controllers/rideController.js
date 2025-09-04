@@ -9,6 +9,7 @@ function buildRidePayload(ride) {
     customer_id: ride.customer_id,
     driver_id: ride.driver_id,
     status: ride.status,
+    price: ride.price,
     pickup_time: ride.pickup_time,
     dropoff_time: ride.dropoff_time,
     confirmed_time: ride.confirmed_time,
@@ -38,6 +39,7 @@ export const requestRide = (io) => async (req, res) => {
       dropoff_destination,
       dropoff_latitude,
       dropoff_longitude,
+      price
     } = req.body;
 
     const ride = await Ride.create({
@@ -50,6 +52,7 @@ export const requestRide = (io) => async (req, res) => {
       dropoff_destination,
       dropoff_latitude,
       dropoff_longitude,
+      price,
       status: 'requested',
     });
 
@@ -62,6 +65,7 @@ export const requestRide = (io) => async (req, res) => {
       dropoff_destination,
       dropoff_latitude,
       dropoff_longitude,
+      
     });
 
     console.log('Emitted new_ride_request to drivers');
@@ -202,3 +206,34 @@ export const getRideById = async (req, res) => {
     res.status(500).json({ message: e.message });
   }
 };
+
+
+// Get Driver's Ride History
+export const getRideHistory = async (req, res) => {
+  try {
+    // get driver id from req.user set by authenticate middleware
+    const user = req?.user;
+    console.log(user)
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    let rides;
+    // for driver
+    if (user.role == 'driver') {
+      // Get rides for this driver
+      rides = await Ride.find({ driver_id: user?.id }).populate('customer_id', 'first_name last_name').sort({ date: -1 });
+    }
+    // for customer
+    else if (user.role == 'customer') {
+      // Get rides for this customer
+      rides = await Ride.find({ customer_id: user?.id }).populate('driver_id', 'first_name last_name car_name car_number').sort({ date: -1 });
+    }
+    else {
+      return res.status(400).json({ error: 'Invalid user role' });
+    }
+    
+    res.status(200).json({ data: rides });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}

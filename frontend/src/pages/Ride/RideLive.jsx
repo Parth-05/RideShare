@@ -9,7 +9,7 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import io from 'socket.io-client';
 import api from '../../services/axiosInstance';
 import { Car, Phone, Hash, Gauge, CheckCircle2, Zap, Flag } from 'lucide-react';
-import { fetchCustomerProfile } from '../../redux/auth/authSlice';
+import { fetchCustomerProfile } from '../../redux/slices/authSlice';
 
 const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
   withCredentials: true,

@@ -15,9 +15,10 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { requestRide, clearRide } from '../../redux/ride/rideSlice';
-import { fetchCustomerProfile } from '../../redux/auth/authSlice';
-import io from 'socket.io-client';
+import { requestRide, clearRide } from '../../redux/slices/rideSlice';
+import { fetchCustomerProfile } from '../../redux/slices/authSlice';
+// import io from 'socket.io-client';
+import { socket } from '../../services/socket';
 import api from '../../services/axiosInstance';
 import {
     Car,
@@ -167,9 +168,9 @@ const NominatimSearchInput = ({ placeholder, onSelect, disabled }) => {
     );
 };
 
-// Socket
-const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
-const socket = io(SOCKET_SERVER_URL, { withCredentials: true });
+// // Socket
+// const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+// const socket = io(SOCKET_SERVER_URL, { withCredentials: true });
 
 // Small star rating display
 const Stars = ({ value = 0 }) => {
@@ -506,7 +507,8 @@ useEffect(() => {
             const predictRes = await fetch('http://localhost:8000/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                withCredentials: true,
+                // withCredentials: true,
+                credentials: 'include',
                 body: JSON.stringify({ trip_distance: miles, pick_hour, pick_day }),
             });
             const predictData = await predictRes.json();
@@ -516,14 +518,18 @@ useEffect(() => {
             if (carType === 'Van') price += 5;
 
             setEstimatedPrice(price);
-
+            // console.log(pickup)
+            // console.log(dropoff)
             // dispatch ride request
-            dispatch(
+            const action = await dispatch(
                 requestRide({
+                    pickup_destination: pickup?.display,
                     pickup_latitude: pickup.lat,
                     pickup_longitude: pickup.lng,
+                    dropoff_destination: dropoff?.display,
                     dropoff_latitude: dropoff.lat,
                     dropoff_longitude: dropoff.lng,
+                    price                
                 })
             );
 

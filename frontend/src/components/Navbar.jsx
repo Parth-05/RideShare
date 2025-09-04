@@ -1,39 +1,40 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { jwtDecode } from 'jwt-decode';
+// import { jwtDecode } from 'jwt-decode';
 import {
   logoutCustomer,
   logoutDriver,
-  fetchCustomerProfile,
-  fetchDriverProfile,
-} from '../redux/auth/authSlice';
+  // fetchCustomerProfile,
+  // fetchDriverProfile,
+} from '../redux/slices/authSlice';
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
+  const { user, bootstrapStatus } = useSelector((state) => state.auth);
+  const bootstrapping = bootstrapStatus === 'pending';
 
-  useEffect(() => {
-    // Try to hydrate user from cookie token if we don't have one yet
-    const tokenEntry = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith('token='));
-    if (tokenEntry && !user) {
-      const token = decodeURIComponent(tokenEntry.split('=')[1] || '');
-      try {
-        const decoded = jwtDecode(token);
-        const role = decoded?.role;
-        if (role === 'customer') {
-          dispatch(fetchCustomerProfile());
-        } else if (role === 'driver') {
-          dispatch(fetchDriverProfile());
-        }
-      } catch (err) {
-        console.error('Invalid token:', err);
-      }
-    }
-  }, [dispatch, user]);
+  // useEffect(() => {
+  //   // Try to hydrate user from cookie token if we don't have one yet
+  //   const tokenEntry = document.cookie
+  //     .split('; ')
+  //     .find((row) => row.startsWith('token='));
+  //   if (tokenEntry && !user) {
+  //     const token = decodeURIComponent(tokenEntry.split('=')[1] || '');
+  //     try {
+  //       const decoded = jwtDecode(token);
+  //       const role = decoded?.role;
+  //       if (role === 'customer') {
+  //         dispatch(fetchCustomerProfile());
+  //       } else if (role === 'driver') {
+  //         dispatch(fetchDriverProfile());
+  //       }
+  //     } catch (err) {
+  //       console.error('Invalid token:', err);
+  //     }
+  //   }
+  // }, [dispatch, user]);
 
   const handleLogout = () => {
     if (user?.role === 'customer') {
@@ -54,8 +55,12 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-4">
+          {/* while bootstrapping, show a subtle placeholder */}
+          {bootstrapping && (
+            <div className="h-8 w-24 animate-pulse rounded-xl bg-slate-200" />
+          )}
           {/* When logged in, show nav links */}
-          {user && (
+          {!bootstrapping && user && (
             <>
               <Link
                 to={profilePath}
@@ -63,7 +68,7 @@ const Navbar = () => {
               >
                 Profile
               </Link>
-
+              {/* Customer */}
               {user.role === 'customer' && (
                 <Link
                   to="/customer/book-ride"
@@ -72,24 +77,35 @@ const Navbar = () => {
                   Book a Ride
                 </Link>
               )}
+              {/* Driver */}
+              {user.role === 'driver' && (
+                <Link
+                  to="/driver/dashboard"
+                  className="text-slate-700 hover:text-slate-900 font-medium"
+                >
+                  Dashboard
+                </Link>
+              )}
             </>
           )}
 
           {/* Auth button */}
-          {user ? (
-            <button
-              onClick={handleLogout}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
-            >
-              Login
-            </Link>
+          {bootstrapping ? null : (
+            user ? (
+              <button
+                onClick={handleLogout}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                Login
+              </Link>
+            )
           )}
         </div>
       </div>

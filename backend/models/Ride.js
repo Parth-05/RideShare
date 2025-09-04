@@ -11,6 +11,7 @@ const rideSchema = new mongoose.Schema({
   dropoff_destination: { type: String, default: null }, // optional field for future use
   dropoff_latitude: { type: Number, required: true },
   dropoff_longitude: { type: Number, required: true },
+  price: { type: Number, required: true },
   dropoff_time: { type: Date, default: null },
   payment_id: { type: String }, // placeholder for future billing
   status: { 

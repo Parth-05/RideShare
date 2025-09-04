@@ -1,5 +1,55 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { jwtDecode } from 'jwt-decode'
 import api from '../../services/axiosInstance';
+
+
+// export const bootstrapAuth = createAsyncThunk(
+//   'auth/bootstrap',
+//   async (_, { dispatch, rejectWithValue }) => {
+//     try {
+//       const tokenEntry = document.cookie.split('; ')
+//         .find((row) => row.startsWith('token='));
+//       if (!tokenEntry) return { role: null }; // no login, but bootstrap finished
+
+//       const token = decodeURIComponent(tokenEntry.split('=')[1] || '');
+//       const decoded = jwtDecode(token);
+//       console.log(decoded)
+//       const role = decoded?.role;
+
+//       if (role === 'customer') {
+//         const r = await dispatch(fetchCustomerProfile());
+//         if (fetchCustomerProfile.rejected.match(r)) throw new Error(r.payload || 'Customer fetch failed');
+//       } else if (role === 'driver') {
+//         const r = await dispatch(fetchDriverProfile());
+//         if (fetchDriverProfile.rejected.match(r)) throw new Error(r.payload || 'Driver fetch failed');
+//       }
+//       return { role: role ?? null };
+//     } catch (e) {
+//       return rejectWithValue(e.message || 'Bootstrap failed');
+//     }
+//   }
+// );
+
+export const bootstrapAuth = createAsyncThunk(
+  'auth/bootstrap',
+  async (_, { rejectWithValue }) => {
+    try {
+      // This request will include your cookie because axios has withCredentials: true
+      const res = await api.get('/auth/me'); // -> { role: 'customer'|'driver', user: {...} }
+      console.log(res)
+      return { role: res.data?.role ?? null, user: res.data?.data ?? null };
+    } catch (err) {
+      if (err.response?.status === 401) {
+        // not logged in; treat as a clean bootstrap finish
+        return { role: null, user: null };
+      }
+      return rejectWithValue(err.response?.data?.error || 'Bootstrap failed');
+    }
+  }
+);
+
+export const selectAuthReady = (s) =>
+  s.auth.bootstrapStatus === 'succeeded' || s.auth.bootstrapStatus === 'failed';
 
 // =================== CUSTOMER ===================
 
@@ -72,11 +122,33 @@ const authSlice = createSlice({
   initialState: {
     user: null,
     loading: false,
-    error: null
+    error: null,
+    bootstrapStatus: 'idle', // 'idle' | 'pending' | 'succeeded' | 'failed'
+    bootstrapError: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
+
+      .addCase(bootstrapAuth.pending, (state) => {
+        state.bootstrapStatus = 'pending';
+        state.bootstrapError = null;
+      })
+      .addCase(bootstrapAuth.fulfilled, (state, action) => {
+        state.bootstrapStatus = 'succeeded';
+        console.log(action)
+        // <-- hydrate user here
+        if (action.payload?.user && action.payload?.role) {
+          state.user = { ...action.payload.user, role: action.payload.role };
+        } else {
+          state.user = null;
+        }
+      })
+      .addCase(bootstrapAuth.rejected, (state, action) => {
+        state.bootstrapStatus = 'failed';
+        state.bootstrapError = action.payload || 'Bootstrap failed';
+      })
+
       // Customer Profile
       .addCase(fetchCustomerProfile.pending, (state) => {
         state.loading = true;

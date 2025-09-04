@@ -33,7 +33,7 @@ export const updateRideStatus = createAsyncThunk(
   'ride/updateStatus',
   async ({ rideId, status }, { rejectWithValue }) => {
     try {
-      const res = await api.patch(`/rides/${rideId}/status`, { status });
+      const res = await api.put(`/rides/${rideId}/status`, { status });
       return res.data.data; // updated ride
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Update status failed');

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCustomerProfile, logoutCustomer } from '../../redux/auth/authSlice';
+import { fetchCustomerProfile, logoutCustomer } from '../../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Mail, Phone, MapPin, Home, Hash, CreditCard } from 'lucide-react';
 

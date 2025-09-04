@@ -83,7 +83,7 @@ export const getDriverProfile = async (req, res) => {
     const driver = await Driver.findById(req.user.id).select('-password');
     if (!driver) return res.status(404).json({ message: 'Customer not found' });
 
-    res.status(200).json({ data: driver });
+    res.status(200).json({ role: 'driver', data: driver });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

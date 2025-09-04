@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchDriverProfile, logoutDriver } from '../../redux/auth/authSlice';
+import { fetchDriverProfile, logoutDriver } from '../../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Mail, Phone, MapPin, Car, Gauge, Hash, Star } from 'lucide-react';
 
@@ -123,12 +123,20 @@ const DriverProfile = () => {
 
               <div className="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
                 <div className="text-sm text-slate-500">Last updated just now</div>
+                                <button
+  onClick={() => navigate('/ridehistory')}
+  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+>
+  <Car className="h-4 w-4" /> View Ride History
+</button>
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
                 >
                   <LogOut className="h-4 w-4" /> Logout
                 </button>
+
+
               </div>
             </div>
           </div>

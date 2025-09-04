@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+// pages/DriverDashboard.jsx
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchDriverProfile } from '../../redux/auth/authSlice';
-import {
-  confirmRide,     // NEW: PATCH -> confirmed
-  startRide,       // NEW: PATCH -> ongoing
-  completeRide,    // NEW: PATCH -> completed
-} from '../../redux/ride/rideSlice';
-import io from 'socket.io-client';
+import { fetchDriverProfile } from '../../redux/slices/authSlice';
+import { confirmRide, startRide, completeRide } from '../../redux/slices/rideSlice';
+import api from '../../services/axiosInstance';
+// import io from 'socket.io-client';
+import { socket } from '../../services/socket';
 import {
   MapPin,
   Navigation,
@@ -19,8 +18,8 @@ import {
   Flag,
 } from 'lucide-react';
 
-const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
-const socket = io(SOCKET_SERVER_URL, { withCredentials: true });
+// const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+// const socket = io(SOCKET_SERVER_URL, { withCredentials: true });
 
 const StatChip = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
@@ -53,52 +52,111 @@ const DriverDashboard = () => {
   const [rideStatus, setRideStatus] = useState(null); // 'confirmed' | 'ongoing' | 'completed' | null
   const [activeRide, setActiveRide] = useState(null); // { ride_id, pickup_*, dropoff_* }
 
-  // Fetch driver profile
+  // --- refs to avoid stale closures inside socket handlers
+  const userIdRef = useRef(null);
+  const activeRideRef = useRef(null);
+  const incomingRideRef = useRef(null);
+  useEffect(() => { userIdRef.current = user?._id || null; }, [user]);
+  useEffect(() => { activeRideRef.current = activeRide; }, [activeRide]);
+  useEffect(() => { incomingRideRef.current = incomingRide; }, [incomingRide]);
+
+  // Fetch driver profile if needed
   useEffect(() => {
     if (!user) dispatch(fetchDriverProfile());
   }, [dispatch, user]);
 
-  // Socket listeners
+  const sameId = (a, b) => String(a ?? '') === String(b ?? '');
+
+  // --- Sync state after (re)connect or when user becomes available
+  const syncInitialState = useCallback(async () => {
+    const driverId = userIdRef.current;
+    if (!driverId) return;
+
+    try {
+      // server expects no args (joins global "drivers" room)
+     socket.emit('join_as_driver');
+
+      // fetch snapshot of rides, pick newest ongoing/confirmed
+      const { data } = await api.get('/rides/history'); // expects { data: [...] }
+      const rides = Array.isArray(data?.data) ? data.data : [];
+
+      const open = rides
+        .filter((r) => ['ongoing', 'confirmed'].includes(String(r.status || '').toLowerCase()))
+        .sort((a, b) => new Date(b.createdAt || b.pickup_time || 0) - new Date(a.createdAt || a.pickup_time || 0))[0];
+
+      if (open) {
+        setActiveRide({
+          ride_id: open._id,
+          pickup_latitude: open.pickup_latitude,
+          pickup_longitude: open.pickup_longitude,
+          dropoff_latitude: open.dropoff_latitude,
+          dropoff_longitude: open.dropoff_longitude,
+        });
+        setRideStatus(String(open.status).toLowerCase());
+        setIncomingRide(null);
+      }
+    } catch (err) {
+      console.error('initial sync failed', err);
+    }
+  }, []);
+
+  // Run sync on socket connect (initial + any reconnects)
   useEffect(() => {
-    socket.on('connect', () => {
-      socket.emit('join_as_driver');
-    });
+    const onConnect = () => { syncInitialState(); };
+    socket.on('connect', onConnect);
 
-    socket.on('new_ride_request', (data) => {
-      // Only set if we don't already have an active/incoming ride
-      if (!activeRide && !incomingRide) setIncomingRide(data);
-    });
+    // If already connected and user just loaded, sync now
+    if (socket.connected) syncInitialState();
 
-    socket.on('ride_confirmed', (data) => {
-      if (user && data.driver_id === user._id) {
-        setActiveRide((prev) => prev ?? data); // ensure we keep the coords from first payload
+    return () => {
+      socket.off('connect', onConnect);
+    };
+  }, [syncInitialState]);
+
+  // Socket listeners (live updates)
+  useEffect(() => {
+    const onNew = (data) => {
+      // if already have an active or pending ride, ignore new requests
+      if (activeRideRef.current || incomingRideRef.current) return;
+      setIncomingRide((prev) => prev ?? data);
+    };
+
+    const onConfirmed = (data) => {
+      if (sameId(data?.driver_id, userIdRef.current)) {
+        setActiveRide((prev) => prev ?? data);
         setRideStatus('confirmed');
         setIncomingRide(null);
       }
-    });
+    };
 
-    socket.on('ride_ongoing', (data) => {
-      if (user && data.driver_id === user._id) {
+    const onOngoing = (data) => {
+      if (sameId(data?.driver_id, userIdRef.current)) {
         setActiveRide((prev) => prev ?? data);
         setRideStatus('ongoing');
       }
-    });
+    };
 
-    socket.on('ride_completed', (data) => {
-      if (user && data.driver_id === user._id) {
+    const onCompleted = (data) => {
+      if (sameId(data?.driver_id, userIdRef.current)) {
         setActiveRide((prev) => prev ?? data);
         setRideStatus('completed');
       }
-    });
+    };
+
+    socket.on('new_ride_request', onNew);
+    socket.on('ride_requested', onNew);
+    socket.on('ride_confirmed', onConfirmed);
+    socket.on('ride_ongoing', onOngoing);
+    socket.on('ride_completed', onCompleted);
 
     return () => {
-      socket.off('new_ride_request');
-      socket.off('ride_confirmed');
-      socket.off('ride_ongoing');
-      socket.off('ride_completed');
-      socket.off('connect');
+      socket.off('new_ride_request', onNew);
+      socket.off('ride_requested', onNew);
+      socket.off('ride_confirmed', onConfirmed);
+      socket.off('ride_ongoing', onOngoing);
+      socket.off('ride_completed', onCompleted);
     };
-  }, [user, activeRide, incomingRide]);
+  }, []);
 
   // Pretty coords
   const fmt = (n) => (n || n === 0 ? Number(n).toFixed(5) : '—');
@@ -119,9 +177,8 @@ const DriverDashboard = () => {
   // === ACTIONS ===
   const handleAccept = async () => {
     if (!incomingRide) return;
-    // Use unified status endpoint (confirm)
     dispatch(confirmRide(incomingRide.ride_id));
-    // Let socket 'ride_confirmed' finalize UI, but we can optimistically reflect:
+    // optimistic UI; server event will confirm
     setActiveRide(incomingRide);
     setRideStatus('confirmed');
     setIncomingRide(null);
@@ -133,14 +190,12 @@ const DriverDashboard = () => {
     const id = activeRide?.ride_id || currentRide?._id;
     if (!id) return;
     dispatch(startRide(id));
-    // socket will flip to 'ongoing'
   };
 
   const handleComplete = () => {
     const id = activeRide?.ride_id || currentRide?._id;
     if (!id) return;
     dispatch(completeRide(id));
-    // socket will flip to 'completed'
   };
 
   const working = authLoading || rideLoading;
@@ -202,16 +257,8 @@ const DriverDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Row
-                icon={MapPin}
-                label="Pickup"
-                value={`${fmt(activeRide.pickup_latitude)}, ${fmt(activeRide.pickup_longitude)}`}
-              />
-              <Row
-                icon={MapPin}
-                label="Dropoff"
-                value={`${fmt(activeRide.dropoff_latitude)}, ${fmt(activeRide.dropoff_longitude)}`}
-              />
+              <Row icon={MapPin} label="Pickup" value={`${fmt(activeRide.pickup_latitude)}, ${fmt(activeRide.pickup_longitude)}`} />
+              <Row icon={MapPin} label="Dropoff" value={`${fmt(activeRide.dropoff_latitude)}, ${fmt(activeRide.dropoff_longitude)}`} />
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
@@ -242,22 +289,13 @@ const DriverDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Row
-                icon={MapPin}
-                label="Pickup"
-                value={`${fmt(activeRide.pickup_latitude)}, ${fmt(activeRide.pickup_longitude)}`}
-              />
-              <Row
-                icon={MapPin}
-                label="Dropoff"
-                value={`${fmt(activeRide.dropoff_latitude)}, ${fmt(activeRide.dropoff_longitude)}`}
-              />
+              <Row icon={MapPin} label="Pickup" value={`${fmt(activeRide.pickup_latitude)}, ${fmt(activeRide.pickup_longitude)}`} />
+              <Row icon={MapPin} label="Dropoff" value={`${fmt(activeRide.dropoff_latitude)}, ${fmt(activeRide.dropoff_longitude)}`} />
             </div>
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-slate-500">
-                Ride ID:&nbsp;
-                <span className="font-mono text-slate-700">{activeRide.ride_id}</span>
+                Ride ID:&nbsp;<span className="font-mono text-slate-700">{activeRide.ride_id}</span>
               </div>
               <button
                 onClick={handleStart}
@@ -282,21 +320,13 @@ const DriverDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Row
-                icon={MapPin}
-                label="Pickup"
-                value={`${fmt(incomingRide.pickup_latitude)}, ${fmt(incomingRide.pickup_longitude)}`}
-              />
-              <Row
-                icon={MapPin}
-                label="Dropoff"
-                value={`${fmt(incomingRide.dropoff_latitude)}, ${fmt(incomingRide.dropoff_longitude)}`}
-              />
+              <Row icon={MapPin} label="Pickup" value={`${fmt(incomingRide.pickup_latitude)}, ${fmt(incomingRide.pickup_longitude)}`} />
+              <Row icon={MapPin} label="Dropoff" value={`${fmt(incomingRide.dropoff_latitude)}, ${fmt(incomingRide.dropoff_longitude)}`} />
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button
-                onClick={handleDecline}
+                onClick={() => setIncomingRide(null)}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 <XCircle className="h-5 w-5" /> Decline
@@ -317,9 +347,7 @@ const DriverDashboard = () => {
               <Navigation className="h-6 w-6" />
             </div>
             <h3 className="text-lg font-semibold text-slate-800">Waiting for ride requests…</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Keep this tab open. You’ll get a prompt here when a new ride comes in.
-            </p>
+            <p className="mt-1 text-sm text-slate-600">Keep this tab open. You’ll get a prompt here when a new ride comes in.</p>
           </div>
         )}
 

@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import customerRoutes from './routes/customerRoutes.js';
 import driverRoutes from './routes/driverRoutes.js';
 import rideRoutes from './routes/rideRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import mongoose from 'mongoose';
 
 dotenv.config();
@@ -42,6 +43,7 @@ mongoose.connect(MONGO_URI, {
     // Routes
     app.use('/api/customers', customerRoutes);
     app.use('/api/drivers', driverRoutes);
+    app.use('/api/auth', authRoutes);
     app.use('/api/rides', rideRoutes(io));
 
     // Socket.io connection
