@@ -57,7 +57,7 @@ export const selectAuthReady = (s) =>
 export const fetchCustomerProfile = createAsyncThunk('auth/fetchCustomerProfile', async (_, { rejectWithValue }) => {
   try {
     const res = await api.get('/customers/profile');
-    return res.data.customer;
+    return res.data.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch customer profile');
   }
