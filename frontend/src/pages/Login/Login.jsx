@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import api from "../../services/axiosInstance";
 import { Mail, Lock, UserCircle2, LogIn } from "lucide-react";
 import FullScreenLoader from "../../components/Loader"; // ⬅️ add this
+import { loginCustomer, loginDriver } from "../../redux/slices/authSlice";
+import { useDispatch } from "react-redux";
 
 const LoginPage = () => {
   const [role, setRole] = useState("customer");
   const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false); // ⬅️ loader state
+  const dispatch = useDispatch();
 
   const navigate = useNavigate();
 
@@ -19,7 +22,13 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true); // ⬅️ show loader
     try {
-      await api.post(`/${role}s/login`, credentials);
+      if (role === 'customer') {
+        await dispatch(loginCustomer(credentials));
+      }
+      else {
+        await dispatch(loginDriver(credentials));
+      }
+      // await api.post(`/${role}s/login`, credentials);
       // keep loader visible until route change unmounts this page
       navigate(`/${role}/profile`);
     } catch (err) {

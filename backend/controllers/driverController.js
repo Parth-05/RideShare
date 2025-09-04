@@ -3,6 +3,10 @@ import jwt from 'jsonwebtoken';
 import { Driver } from '../models/Driver.js';
 import dotenv from 'dotenv';
 
+// api response
+import { SuccessResponse, ErrorResponse } from '../utils/apiResponse.js';
+import { MSG_DRIVER_EXISTS, MSG_DRIVER_NOT_FOUND, MSG_ERROR, MSG_LOGGED_OUT, MSG_INVALID_CREDENTIALS, MSG_SUCCESS, STATUS_CODE_200, STATUS_CODE_201, STATUS_CODE_400, STATUS_CODE_401, STATUS_CODE_404, STATUS_CODE_409, STATUS_CODE_500 } from '../constants/apiResponseConstants.js';
+
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -10,13 +14,18 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Register a new driver
 export const registerDriver = async (req, res) => {
   try {
+    // Extract driver details from request body
     const { email, password, ...rest } = req.body;
-
+    // Check if driver already exists
     const existing = await Driver.findOne({ email });
-    if (existing) return res.status(409).json({ error: 'Driver already exists' });
-
+    // if exists, return conflict error
+    if (existing) {
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_409, message: MSG_DRIVER_EXISTS });
+    }
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create new driver
     const driver = await Driver.create({
       email,
       password: hashedPassword,
@@ -39,22 +48,32 @@ export const registerDriver = async (req, res) => {
 
     const { password: storedPassword, ...driverDetails } = driver._doc;
 
-    res.status(201).json({ message: 'Driver registered', data: driverDetails });
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_201, message: MSG_SUCCESS, data: driverDetails });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error in registerDriver: ", err);
+    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
 
 // Login an existing driver
 export const loginDriver = async (req, res) => {
   try {
+    // get email and password from req.body
     const { email, password } = req.body;
 
+    // find driver by email
     const driver = await Driver.findOne({ email });
-    if (!driver) return res.status(400).json({ error: 'Driver not found' });
+    // if not found, return error
+    if (!driver) {
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_400, message: MSG_DRIVER_NOT_FOUND });
+    }
 
+    // compare password
     const valid = await bcrypt.compare(password, driver.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid Credentials' });
+    // if not valid, return error
+    if (!valid) {
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_401, message: MSG_INVALID_CREDENTIALS });
+    }
 
     // Generate JWT token for driver
     const token = jwt.sign(
@@ -71,21 +90,27 @@ export const loginDriver = async (req, res) => {
     });
 
     const { password: storedPassword, ...driverDetails } = driver._doc;
-    res.status(200).json({ message: 'Login successful', data: driverDetails });
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: driverDetails });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error in loginDriver: ", err);
+    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
 
 // Protected route
 export const getDriverProfile = async (req, res) => {
   try {
+    // find driver by id from req.user set by auth middleware
     const driver = await Driver.findById(req.user.id).select('-password');
-    if (!driver) return res.status(404).json({ message: 'Customer not found' });
-
-    res.status(200).json({ role: 'driver', data: driver });
+    // if driver not found
+    if (!driver) {
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_404, message: MSG_DRIVER_NOT_FOUND });
+    }
+    // return driver profile
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: {role: 'driver', driver} });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error in getDriverProfile:', err);
+    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
 
@@ -103,9 +128,10 @@ export const getDriverPublic = async (req, res) => {
 
 // logout driver
 export const logoutDriver = (req, res) => {
+  // clear cookie
    res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
   });
-  res.status(200).json({ message: 'Logged out' });
+  return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_LOGGED_OUT });
 }

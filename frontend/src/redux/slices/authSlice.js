@@ -89,7 +89,7 @@ export const logoutCustomer = createAsyncThunk('auth/logoutCustomer', async (_, 
 export const fetchDriverProfile = createAsyncThunk('auth/fetchDriverProfile', async (_, { rejectWithValue }) => {
   try {
     const res = await api.get('/drivers/profile');
-    return res.data.data;
+    return res.data?.data?.driver;
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch driver profile');
   }
@@ -99,7 +99,7 @@ export const fetchDriverProfile = createAsyncThunk('auth/fetchDriverProfile', as
 export const loginDriver = createAsyncThunk('auth/loginDriver', async ({ email, password }, { rejectWithValue }) => {
   try {
     const res = await api.post('/drivers/login', { email, password });
-    return res.data.driver;
+    return res.data?.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Login failed');
   }

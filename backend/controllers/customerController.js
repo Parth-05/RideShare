@@ -128,7 +128,7 @@ export const getCustomerProfile = async (req, res) => {
       return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_404, message: MSG_CUSTOMER_NOT_FOUND });
     }
     // return customer profile
-    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: customer });
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: {role: 'customer', customer} });
   } catch (err) {
     console.error('Error in getCustomerProfile:', err);
     return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });

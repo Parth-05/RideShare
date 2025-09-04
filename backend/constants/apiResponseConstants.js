@@ -2,7 +2,9 @@
 export const MSG_SUCCESS = 'Success';
 export const MSG_ERROR = 'Internal Server Error';
 export const MSG_CUSTOMER_EXISTS = 'Customer already exists';
+export const MSG_DRIVER_EXISTS = 'Driver already exists';
 export const MSG_CUSTOMER_NOT_FOUND = 'Customer not found';
+export const MSG_DRIVER_NOT_FOUND = 'Driver not found';
 export const MSG_INVALID_CREDENTIALS = 'Invalid Credentials';
 export const MSG_LOGGED_OUT = 'Logged out';
 
