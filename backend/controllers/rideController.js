@@ -1,5 +1,7 @@
 // controllers/rideController.js
+import { MSG_DRIVER_ACCESS_REQUIRED, MSG_ERROR, MSG_NOT_YOUR_RIDE, MSG_RIDE_ALREADY_ACCEPTED, MSG_RIDE_NOT_FOUND, MSG_INVALID_STATUS_TRANSITION, MSG_RIDE_REQUESTED, MSG_SUCCESS, STATUS_CODE_200, STATUS_CODE_201, STATUS_CODE_400, STATUS_CODE_403, STATUS_CODE_404, STATUS_CODE_500, MSG_INVALID_USER_ROLE } from '../constants/apiResponseConstants.js';
 import { Ride } from '../models/Ride.js';
+import { ErrorResponse, SuccessResponse } from '../utils/apiResponse.js';
 // import { Driver } from '../models/Driver.js'; // not used; safe to remove
 
 /** Build a consistent socket payload from a Ride doc */
@@ -31,7 +33,9 @@ function emitToDrivers(io, event, payload) {
 // Request ride
 export const requestRide = (io) => async (req, res) => {
   try {
+    // get the customer id from req.user set by authenticate middleware
     const customerId = req.user.id;
+    // get ride details from req.body
     const {
       pickup_destination,
       pickup_latitude,
@@ -41,7 +45,7 @@ export const requestRide = (io) => async (req, res) => {
       dropoff_longitude,
       price
     } = req.body;
-
+    // create new ride with status 'requested'
     const ride = await Ride.create({
       customer_id: customerId,
       driver_id: null,
@@ -69,12 +73,14 @@ export const requestRide = (io) => async (req, res) => {
     });
 
     console.log('Emitted new_ride_request to drivers');
-
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_201, message: MSG_RIDE_REQUESTED, data: ride });
     res.status(201).json({
       message: 'Ride request created',
       data: ride,
     });
   } catch (err) {
+    console.error('Error in requestRide:', err);
+    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
     res.status(500).json({ message: err.message });
   }
 };
@@ -110,14 +116,17 @@ export const acceptRide = (io) => async (req, res) => {
 /** Single status endpoint: requested -> confirmed -> ongoing -> completed */
 export const updateRideStatus = (io) => async (req, res) => {
   try {
+    // get the rideId
     const { id: rideId } = req.params;
+    // get the ride status
     const { status } = req.body; // 'confirmed' | 'ongoing' | 'completed'
     const userId = req.user?.id;
     const role = req.user?.role;
 
     const allowedTargets = ['confirmed', 'ongoing', 'completed'];
     if (!allowedTargets.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_400, message: MSG_INVALID_STATUS_TRANSITION });
+      // return res.status(400).json({ message: 'Invalid status' });
     }
 
     // Atomic transition plans
@@ -144,6 +153,7 @@ export const updateRideStatus = (io) => async (req, res) => {
 
     const plan = plans[status];
     if (plan.requireDriver && role !== 'driver') {
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_403, message: MSG_DRIVER_ACCESS_REQUIRED });
       return res.status(403).json({ message: 'Driver access required' });
     }
 
@@ -151,32 +161,42 @@ export const updateRideStatus = (io) => async (req, res) => {
     let ride = await Ride.findOneAndUpdate(plan.query, plan.update, { new: true });
 
     if (!ride) {
-      // Helpful / idempotent responses
+      // find existing ride
       const existing = await Ride.findById(rideId);
-      if (!existing) return res.status(404).json({ message: 'Ride not found' });
+      if (!existing) {
+        return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_404, message: MSG_RIDE_NOT_FOUND });
+        // return res.status(404).json({ message: 'Ride not found' });
+      }
 
       const sameDriver = String(existing.driver_id || '') === String(userId || '');
       if (existing.status === status && sameDriver) {
-        return res.status(200).json({ message: `Ride ${status}`, data: existing });
+        return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: existing });
+        // return res.status(200).json({ message: `Ride ${status}`, data: existing });
       }
 
       if (status === 'confirmed') {
         if (existing.status !== 'requested') {
-          return res.status(409).json({ message: 'Ride already accepted by another driver' });
+          return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_403, message: MSG_RIDE_ALREADY_ACCEPTED });
+          // return res.status(409).json({ message: 'Ride already accepted by another driver' });
         }
       } else if (status === 'ongoing') {
         if (existing.status !== 'confirmed') {
-          return res.status(400).json({ message: `Cannot change status from "${existing.status}" to "ongoing"` });
+          return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_400, message: MSG_INVALID_STATUS_TRANSITION });
+          // return res.status(400).json({ message: `Cannot change status from "${existing.status}" to "ongoing"` });
         }
         if (!sameDriver) return res.status(403).json({ message: 'Not your ride' });
       } else if (status === 'completed') {
         if (existing.status !== 'ongoing') {
-          return res.status(400).json({ message: `Cannot change status from "${existing.status}" to "completed"` });
+          return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_400, message: MSG_INVALID_STATUS_TRANSITION });
+          // return res.status(400).json({ message: `Cannot change status from "${existing.status}" to "completed"` });
         }
-        if (!sameDriver) return res.status(403).json({ message: 'Not your ride' });
+        if (!sameDriver) {
+          return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_403, message: MSG_NOT_YOUR_RIDE });
+          // return res.status(403).json({ message: 'Not your ride' });
+        }
       }
-
-      return res.status(409).json({ message: 'Ride update conflict' });
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_409, message: MSG_RIDE_UPDATE_CONFLICT });
+      // return res.status(409).json({ message: 'Ride update conflict' });
     }
 
     // Success: broadcast to drivers and the specific customer
@@ -188,11 +208,12 @@ export const updateRideStatus = (io) => async (req, res) => {
     if (status === 'confirmed') {
       emitToDrivers(io, 'ride_taken', { ride_id: ride._id, driver_id: ride.driver_id });
     }
-
-    return res.status(200).json({ message: `Ride ${status}`, data: ride });
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: ride });
+    // return res.status(200).json({ message: `Ride ${status}`, data: ride });
   } catch (err) {
     console.error('Error in updateRideStatus:', err);
-    res.status(500).json({ message: err.message });
+    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+    // res.status(500).json({ message: err.message });
   }
 };
 
@@ -213,10 +234,6 @@ export const getRideHistory = async (req, res) => {
   try {
     // get driver id from req.user set by authenticate middleware
     const user = req?.user;
-    console.log(user)
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
     let rides;
     // for driver
     if (user.role == 'driver') {
@@ -229,11 +246,13 @@ export const getRideHistory = async (req, res) => {
       rides = await Ride.find({ customer_id: user?.id }).populate('driver_id', 'first_name last_name car_name car_number').sort({ date: -1 });
     }
     else {
-      return res.status(400).json({ error: 'Invalid user role' });
+      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_400, message: MSG_INVALID_USER_ROLE });
     }
-    
-    res.status(200).json({ data: rides });
+    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: rides });
+    // res.status(200).json({ data: rides });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in getRideHistory:', err);
+    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+    // res.status(500).json({ error: err.message });
   }
 }
