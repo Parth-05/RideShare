@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 // api response
 import { SuccessResponse, ErrorResponse } from '../utils/apiResponse.js';
-import { MSG_DRIVER_EXISTS, MSG_DRIVER_NOT_FOUND, MSG_ERROR, MSG_LOGGED_OUT, MSG_INVALID_CREDENTIALS, MSG_SUCCESS, STATUS_CODE_200, STATUS_CODE_201, STATUS_CODE_400, STATUS_CODE_401, STATUS_CODE_404, STATUS_CODE_409, STATUS_CODE_500 } from '../constants/apiResponseConstants.js';
+import { MSG_DRIVER_EXISTS, MSG_DRIVER_NOT_FOUND, MSG_ERROR, MSG_LOGGED_OUT, MSG_INVALID_CREDENTIALS, MSG_SUCCESS, STATUS_CODE_200, STATUS_CODE_201, STATUS_CODE_400, STATUS_CODE_401, STATUS_CODE_404, STATUS_CODE_409, STATUS_CODE_500, MSG_EMAIL_ALREADY_IN_USE } from '../constants/apiResponseConstants.js';
 
 dotenv.config();
 
@@ -113,6 +113,50 @@ export const getDriverProfile = async (req, res) => {
     return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
+
+export const updateDriverProfile = async (req, res) => {
+  try {
+    const {email, password, ...rest} = req.body;
+    const update = {...rest};
+
+    // If email present, normalize up-front
+    if (email !== null) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+    // Check if the email is being used by someone else
+    const existing = await Driver.findOne({
+      email,
+      _id: { $ne: req.user.id }, // ignore the current user's doc
+    });
+    // If email is taken
+    if (existing) {
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_400, message: MSG_EMAIL_ALREADY_IN_USE });
+    }
+
+    update.email = normalizedEmail;
+  }
+
+    // hash password
+    if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    update.password = hashedPassword;
+    }
+
+    // find customer by id from req.user set by auth middleware
+    const customer = await Driver.findByIdAndUpdate(
+      req.user.id,
+      { $set: update },
+      { new: true, runValidators: true }
+    ).select('-password');
+    // if customer not found
+    if (!customer) {
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_404, message: MSG_CUSTOMER_NOT_FOUND });
+    }
+    return SuccessResponse(res, { success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: { role: 'customer', customer } });
+  } catch (err) {
+    console.error('Error in updateCustomerProfile:', err);
+    return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+  }
+}
 
 // controllers/driverController.js
 export const getDriverPublic = async (req, res) => {

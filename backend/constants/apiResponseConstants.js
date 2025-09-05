@@ -15,6 +15,7 @@ export const MSG_INVALID_STATUS_TRANSITION = 'Invalid status transition';
 export const MSG_NOT_YOUR_RIDE = 'Not your ride';
 export const MSG_RIDE_UPDATE_CONFLICT = 'Ride update conflict';
 export const MSG_INVALID_USER_ROLE = 'Invalid user role';
+export const MSG_EMAIL_ALREADY_IN_USE = 'Email is already in use by another account';
 
 
 // STATUS CODE CONSTANTS

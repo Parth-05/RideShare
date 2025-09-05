@@ -7,20 +7,21 @@ import dotenv from 'dotenv';
 import { SuccessResponse, ErrorResponse } from '../utils/apiResponse.js';
 
 // apiResponseConstants
-import { 
+import {
   MSG_SUCCESS,
-  MSG_ERROR, 
+  MSG_ERROR,
   MSG_INVALID_CREDENTIALS,
   MSG_CUSTOMER_NOT_FOUND,
   MSG_CUSTOMER_EXISTS,
   MSG_LOGGED_OUT,
-  STATUS_CODE_200, 
+  STATUS_CODE_200,
   STATUS_CODE_201,
   STATUS_CODE_400,
   STATUS_CODE_401,
-  STATUS_CODE_404, 
-  STATUS_CODE_409, 
-  STATUS_CODE_500
+  STATUS_CODE_404,
+  STATUS_CODE_409,
+  STATUS_CODE_500,
+  MSG_EMAIL_ALREADY_IN_USE
 } from '../constants/apiResponseConstants.js';
 
 
@@ -37,7 +38,7 @@ export const registerCustomer = async (req, res) => {
     // check if customer already exists
     const existing = await Customer.findOne({ email });
     if (existing) {
-      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_409, message: MSG_CUSTOMER_EXISTS});
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_409, message: MSG_CUSTOMER_EXISTS });
     }
 
     // hash password
@@ -66,12 +67,12 @@ export const registerCustomer = async (req, res) => {
     });
     const { password: storedPassword, ...customerDetails } = customer._doc;
 
-    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_201, message: MSG_SUCCESS, data: customerDetails});
+    return SuccessResponse(res, { success: true, statusCode: STATUS_CODE_201, message: MSG_SUCCESS, data: customerDetails });
 
   } catch (err) {
     // log the error for debugging
     console.error('Error in registerCustomer:', err);
-    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+    return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
 
@@ -84,14 +85,14 @@ export const loginCustomer = async (req, res) => {
     const customer = await Customer.findOne({ email });
     // If not found, return error
     if (!customer) {
-      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_400, message: MSG_CUSTOMER_NOT_FOUND });
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_400, message: MSG_CUSTOMER_NOT_FOUND });
     }
 
     // Compare password
     const valid = await bcrypt.compare(password, customer.password);
     // if not valid, return error
     if (!valid) {
-      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_401, message: MSG_INVALID_CREDENTIALS });
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_401, message: MSG_INVALID_CREDENTIALS });
     }
 
     // Sign JWT token
@@ -102,19 +103,19 @@ export const loginCustomer = async (req, res) => {
     );
 
     // Set token in httpOnly cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // only over HTTPS in prod
-    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // cross-site in prod
-    maxAge: 60 * 60 * 1000 // 1 hour
-  });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // only over HTTPS in prod
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // cross-site in prod
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
 
     const { password: storedPassword, ...customerDetails } = customer._doc;
     // Return success response
-    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: customerDetails });
+    return SuccessResponse(res, { success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: customerDetails });
   } catch (err) {
     console.error('Error in loginCustomer:', err);
-    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+    return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
 
@@ -125,23 +126,69 @@ export const getCustomerProfile = async (req, res) => {
     const customer = await Customer.findById(req.user.id).select('-password');
     // if customer not found
     if (!customer) {
-      return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_404, message: MSG_CUSTOMER_NOT_FOUND });
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_404, message: MSG_CUSTOMER_NOT_FOUND });
     }
     // return customer profile
-    return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: {role: 'customer', customer} });
+    return SuccessResponse(res, { success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: { role: 'customer', customer } });
   } catch (err) {
     console.error('Error in getCustomerProfile:', err);
-    return ErrorResponse(res,{ success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+    return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
   }
 };
+
+export const updateCustomerProfile = async (req, res) => {
+  try {
+    const {email, password, ...rest} = req.body;
+    const update = {...rest};
+
+    // If email present, normalize up-front
+    if (email !== null) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+    
+
+    // Check if the email is being used by someone else
+    const existing = await Customer.findOne({
+      email,
+      _id: { $ne: req.user.id }, // ignore the current user's doc
+    });
+    // If email is taken
+    if (existing) {
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_400, message: MSG_EMAIL_ALREADY_IN_USE });
+    }
+
+    update.email = normalizedEmail;
+  }
+
+    // hash password
+    if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    update.password = hashedPassword;
+    }
+
+    // find customer by id from req.user set by auth middleware
+    const customer = await Customer.findByIdAndUpdate(
+      req.user.id,
+      { $set: update },
+      { new: true, runValidators: true }
+    ).select('-password');
+    // if customer not found
+    if (!customer) {
+      return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_404, message: MSG_CUSTOMER_NOT_FOUND });
+    }
+    return SuccessResponse(res, { success: true, statusCode: STATUS_CODE_200, message: MSG_SUCCESS, data: { role: 'customer', customer } });
+  } catch (err) {
+    console.error('Error in updateCustomerProfile:', err);
+    return ErrorResponse(res, { success: false, statusCode: STATUS_CODE_500, message: MSG_ERROR });
+  }
+}
 
 // Logout the customer
 export const logoutCustomer = (req, res) => {
   // Clear the token cookie
-   res.clearCookie('token', {
+  res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
   });
   // Send response
-  return SuccessResponse(res,{ success: true, statusCode: STATUS_CODE_200, message: MSG_LOGGED_OUT });
+  return SuccessResponse(res, { success: true, statusCode: STATUS_CODE_200, message: MSG_LOGGED_OUT });
 }
