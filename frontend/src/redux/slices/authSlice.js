@@ -37,7 +37,18 @@ export const bootstrapAuth = createAsyncThunk(
       // This request will include your cookie because axios has withCredentials: true
       const res = await api.get('/auth/me'); // -> { role: 'customer'|'driver', user: {...} }
       console.log(res)
-      return { role: res.data?.role ?? null, user: res.data?.data ?? null };
+      const role = res.data?.data?.role ?? null;
+      let user;
+      if (role === 'customer') {
+        user = res.data?.data?.customer ?? null;
+      }
+      else if (role === 'driver') {
+        user = res.data?.data?.driver ?? null;
+      }
+      else {
+        user = null;
+      }
+      return { role, user };
     } catch (err) {
       if (err.response?.status === 401) {
         // not logged in; treat as a clean bootstrap finish
@@ -57,7 +68,7 @@ export const selectAuthReady = (s) =>
 export const fetchCustomerProfile = createAsyncThunk('auth/fetchCustomerProfile', async (_, { rejectWithValue }) => {
   try {
     const res = await api.get('/customers/profile');
-    return res.data.data;
+    return res.data?.data?.customer;
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch customer profile');
   }
@@ -67,7 +78,7 @@ export const fetchCustomerProfile = createAsyncThunk('auth/fetchCustomerProfile'
 export const loginCustomer = createAsyncThunk('auth/loginCustomer', async ({ email, password }, { rejectWithValue }) => {
   try {
     const res = await api.post('/customers/login', { email, password });
-    return res.data.customer;
+    return res.data?.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Login failed');
   }
@@ -136,7 +147,6 @@ const authSlice = createSlice({
       })
       .addCase(bootstrapAuth.fulfilled, (state, action) => {
         state.bootstrapStatus = 'succeeded';
-        console.log(action)
         // <-- hydrate user here
         if (action.payload?.user && action.payload?.role) {
           state.user = { ...action.payload.user, role: action.payload.role };

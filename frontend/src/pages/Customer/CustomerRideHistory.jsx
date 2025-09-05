@@ -14,7 +14,7 @@ const Ellipsis = ({ text, className = '' }) => (
   </span>
 );
 
-const DriverRideHistory = () => {
+const CustomerRideHistory = () => {
   const authReady = useSelector(selectAuthReady);
   const user = useSelector((s) => s.auth.user);
 
@@ -220,4 +220,4 @@ const DriverRideHistory = () => {
   );
 };
 
-export default DriverRideHistory;
+export default CustomerRideHistory;

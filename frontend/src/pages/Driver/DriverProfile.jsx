@@ -124,7 +124,7 @@ const DriverProfile = () => {
               <div className="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
                 <div className="text-sm text-slate-500">Last updated just now</div>
                                 <button
-  onClick={() => navigate('/ridehistory')}
+  onClick={() => navigate('/driver/ridehistory')}
   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
 >
   <Car className="h-4 w-4" /> View Ride History

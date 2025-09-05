@@ -10,10 +10,11 @@ import io from 'socket.io-client';
 import api from '../../services/axiosInstance';
 import { Car, Phone, Hash, Gauge, CheckCircle2, Zap, Flag } from 'lucide-react';
 import { fetchCustomerProfile } from '../../redux/slices/authSlice';
+import { socket } from '../../services/socket';
 
-const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
-  withCredentials: true,
-});
+// const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
+//   withCredentials: true,
+// });
 
 /* Smooth camera */
 const MapFlyTo = ({ lat, lng }) => {

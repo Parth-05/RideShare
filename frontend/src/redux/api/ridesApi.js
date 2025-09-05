@@ -14,9 +14,11 @@ export const ridesApi = createApi({
     getRideHistory: builder.query({
       query: () => 'rides/history',
       transformResponse: (res) => {
+        console.log(res)
         const arr = Array.isArray(res?.data) ? res.data : [];
         // Map backend fields -> UI fields your component uses
         return arr.map((r) => {
+          console.log(r)
           const pickupText =
             r.pickup_destination ?? fmtLL(r.pickup_latitude, r.pickup_longitude);
           const dropoffText =
@@ -41,7 +43,7 @@ export const ridesApi = createApi({
             destination: dropoffText,                 // UI expects ride.destination
             createdAt: r.pickup_time || r.createdAt,  // UI uses ride.createdAt for date
             status: r.status,
-            fare: r.fare ?? undefined,                // show "—" if not present
+            fare: r.price ?? undefined,                // show "—" if not present
             rideType: r.rideType || 'Standard',
             driver,                                   // UI checks ride.driver?.name
             distance: r.distance ?? undefined,

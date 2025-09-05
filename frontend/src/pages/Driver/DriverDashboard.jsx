@@ -74,16 +74,15 @@ const DriverDashboard = () => {
 
     try {
       // server expects no args (joins global "drivers" room)
-     socket.emit('join_as_driver');
+      socket.emit('join_as_driver');
 
       // fetch snapshot of rides, pick newest ongoing/confirmed
       const { data } = await api.get('/rides/history'); // expects { data: [...] }
-      const rides = Array.isArray(data?.data) ? data.data : [];
+      const rides = Array.isArray(data?.data) ? data?.data : [];
 
       const open = rides
         .filter((r) => ['ongoing', 'confirmed'].includes(String(r.status || '').toLowerCase()))
         .sort((a, b) => new Date(b.createdAt || b.pickup_time || 0) - new Date(a.createdAt || a.pickup_time || 0))[0];
-
       if (open) {
         setActiveRide({
           ride_id: open._id,
@@ -95,6 +94,11 @@ const DriverDashboard = () => {
         setRideStatus(String(open.status).toLowerCase());
         setIncomingRide(null);
       }
+      else {
+        setActiveRide(null);
+        setIncomingRide(null);
+        setRideStatus(null);
+      }
     } catch (err) {
       console.error('initial sync failed', err);
     }
@@ -104,6 +108,9 @@ const DriverDashboard = () => {
   useEffect(() => {
     const onConnect = () => { syncInitialState(); };
     socket.on('connect', onConnect);
+//     socket.on('new_ride_request', (d) => {
+//   console.log('new_ride_request received; active?', !!activeRideRef.current, 'userRef:', userIdRef.current, 'incoming?', !!incomingRideRef.current, d);
+// });
 
     // If already connected and user just loaded, sync now
     if (socket.connected) syncInitialState();
@@ -138,8 +145,14 @@ const DriverDashboard = () => {
 
     const onCompleted = (data) => {
       if (sameId(data?.driver_id, userIdRef.current)) {
-        setActiveRide((prev) => prev ?? data);
+        // setActiveRide((prev) => prev ?? data);
         setRideStatus('completed');
+
+        setTimeout(() => {
+          setActiveRide(null);     // free driver
+          setIncomingRide(null);   // no pending
+          setRideStatus(null);     // so the Waiting block renders
+        }, 1200);
       }
     };
 
@@ -195,7 +208,10 @@ const DriverDashboard = () => {
   const handleComplete = () => {
     const id = activeRide?.ride_id || currentRide?._id;
     if (!id) return;
-    dispatch(completeRide(id));
+    const res = dispatch(completeRide(id));
+    // free the driver to accept new rides
+    // setActiveRide(null);
+    // setIncomingRide(null);
   };
 
   const working = authLoading || rideLoading;

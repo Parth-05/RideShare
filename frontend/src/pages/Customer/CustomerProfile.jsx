@@ -106,6 +106,13 @@ const CustomerProfile = () => {
 
               <div className="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
                 <div className="text-sm text-slate-500">Last updated just now</div>
+                {/* Customer Ride History */}
+                 <button
+                  onClick={() => navigate('/customer/ridehistory')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+                >
+                  <LogOut className="h-4 w-4" /> RideHistory
+                </button>
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"

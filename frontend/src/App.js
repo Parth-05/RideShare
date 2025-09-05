@@ -9,7 +9,9 @@ import BookRide from './pages/BookRide/BookRide';
 import Navbar from './components/Navbar';
 import DriverDashboard from './pages/Driver/DriverDashboard';
 import RideLive from './pages/Ride/RideLive';
-import RideHistory from './pages/Driver/DriverRideHistory';
+import DriverRideHistory from './pages/Driver/DriverRideHistory';
+import CustomerRideHistory from './pages/Customer/CustomerRideHistory';
+import RequireAuth from './components/RequireAuth';
 
 import { bootstrapAuth, selectAuthReady } from './redux/slices/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -34,15 +36,20 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          {/* Add these later */}
           <Route path="/register" element={<Register />} />
           {/* <Route path="/register/driver" element={<DriverRegister />} /> */}
           <Route path="/login" element={<Login />} />
-          <Route path="/customer/profile" element={<CustomerProfile />} />
+
+          {/* Customer only page */}
+          <Route path="/customer/profile" element={
+            <RequireAuth allowed={['customer']}>
+              <CustomerProfile />
+            </RequireAuth>} />
           <Route path="/driver/profile" element={<DriverProfile />} />
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
           <Route path='/customer/book-ride' element={<BookRide />} />
-          <Route path='/ridehistory' element={<RideHistory />} />
+          <Route path='/driver/ridehistory' element={<DriverRideHistory />} />
+          <Route path='/customer/ridehistory' element={<CustomerRideHistory />} />
           <Route path="/ride/:id" element={<RideLive />} />
         </Routes>
       </Router>
