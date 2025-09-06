@@ -67,7 +67,7 @@ export const ridesApi = api.injectEndpoints({
         method: 'GET',
       }),
       transformResponse: (res) => {
-        const arr = Array.isArray(res?.data?.data) ? res.data.data : [];
+        const arr = Array.isArray(res?.data) ? res?.data : [];
 
         return arr.map((r) => {
           const pickupText =
