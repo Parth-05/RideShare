@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDriverProfile, logoutDriver } from '../../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Mail, Phone, MapPin, Car, Gauge, Hash, Star } from 'lucide-react';
+import { LogOut, User, Mail, Phone, MapPin, Car, Gauge, Hash, Star, Pencil } from 'lucide-react';
+import { useGetDriverQuery } from '../../redux/api/profileApi';
 
 // Reusable label/value row with an icon
 const InfoRow = ({ icon: Icon, label, value }) => (
@@ -36,13 +37,14 @@ const Rating = ({ value = 0 }) => {
 const DriverProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, loading } = useSelector((state) => state.auth);
+  // const { user, loading } = useSelector((state) => state.auth);
+  const { data: user, isLoading: loading } = useGetDriverQuery();
 
-  useEffect(() => {
-    if (!user) {
-      dispatch(fetchDriverProfile()); // unchanged
-    }
-  }, [dispatch, user]);
+  // useEffect(() => {
+  //   if (!user) {
+  //     dispatch(fetchDriverProfile()); // unchanged
+  //   }
+  // }, [dispatch, user]);
 
   const handleLogout = () => {
     dispatch(logoutDriver()); // unchanged
@@ -123,12 +125,21 @@ const DriverProfile = () => {
 
               <div className="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
                 <div className="text-sm text-slate-500">Last updated just now</div>
-                                <button
-  onClick={() => navigate('/driver/ridehistory')}
-  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
->
-  <Car className="h-4 w-4" /> View Ride History
-</button>
+                {/* Ride History */}
+                <button
+                  onClick={() => navigate('/driver/ridehistory')}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+                >
+                  <Car className="h-4 w-4" /> View Ride History
+                </button>
+                {/*  Edit Profile */}
+                <button
+                  onClick={() => navigate('/driver/edit-profile')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-medium text-[#2563EB] border border-[#2563EB] shadow-sm transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+                >
+                  <Pencil className="h-4 w-4" /> Edit Profile
+                </button>
+                {/* Logout */}
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"

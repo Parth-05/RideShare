@@ -36,7 +36,6 @@ export const bootstrapAuth = createAsyncThunk(
     try {
       // This request will include your cookie because axios has withCredentials: true
       const res = await api.get('/auth/me'); // -> { role: 'customer'|'driver', user: {...} }
-      console.log(res)
       const role = res.data?.data?.role ?? null;
       let user;
       if (role === 'customer') {

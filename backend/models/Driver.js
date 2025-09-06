@@ -28,7 +28,7 @@ const driverSchema = new mongoose.Schema({
     car_number: {
         type: String,
         required: true,
-        unique: true,
+        // unique: true,
         match: /^[A-Z0-9\-]+$/
     },
     rating: { type: Number, default: 5, min: 1, max: 5 },

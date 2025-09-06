@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCustomerProfile, logoutCustomer } from '../../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Mail, Phone, MapPin, Home, Hash, CreditCard } from 'lucide-react';
+import { LogOut, User, Mail, Phone, MapPin, Home, Hash, CreditCard, Pencil } from 'lucide-react';
+import { useGetCustomerProfileQuery } from '../../redux/api/profileApi';
 
 // Reusable label/value row with an icon
 const InfoRow = ({ icon: Icon, label, value }) => (
@@ -28,13 +29,14 @@ const maskCard = (card) => {
 const CustomerProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, loading } = useSelector((state) => state.auth);
+  // const { user, loading } = useSelector((state) => state.auth);
+  const { data: user, isLoading: loading } = useGetCustomerProfileQuery();
 
-  useEffect(() => {
-    if (!user) {
-      dispatch(fetchCustomerProfile()); // unchanged
-    }
-  }, [dispatch, user]);
+  // useEffect(() => {
+  //   if (!user) {
+  //     dispatch(fetchCustomerProfile()); // unchanged
+  //   }
+  // }, [dispatch, user]);
 
   const handleLogout = () => {
     dispatch(logoutCustomer()); // unchanged
@@ -107,12 +109,20 @@ const CustomerProfile = () => {
               <div className="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
                 <div className="text-sm text-slate-500">Last updated just now</div>
                 {/* Customer Ride History */}
-                 <button
+                <button
                   onClick={() => navigate('/customer/ridehistory')}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
                 >
                   <LogOut className="h-4 w-4" /> RideHistory
                 </button>
+                {/*  Edit Profile */}
+                <button
+                  onClick={() => navigate('/customer/edit-profile')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-medium text-[#2563EB] border border-[#2563EB] shadow-sm transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+                >
+                  <Pencil className="h-4 w-4" /> Edit Profile
+                </button>
+                {/* Logout */}
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
